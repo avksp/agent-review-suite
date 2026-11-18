@@ -56,7 +56,6 @@ jobs:
     environment: pypi
     permissions:
       actions: read
-      contents: read
       id-token: write
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -93,12 +92,23 @@ jobs:
                   raise SystemExit(f"PyPI file digest differs: {name}")
       - name: Recheck the release tag
         env:
-          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.prepare.outputs.version }}
+        shell: bash
         run: |
-          tag="v$VERSION"
-          test "$GITHUB_REF" = "refs/tags/$tag"
-          remote_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$tag" --jq .sha)
+          tag_ref="refs/tags/v$VERSION"
+          test "$GITHUB_REF" = "$tag_ref"
+          test "$GITHUB_REF_PROTECTED" = "true"
+          remote_sha=$(
+            git ls-remote --exit-code "https://github.com/$GITHUB_REPOSITORY.git" "$tag_ref" "$tag_ref^{}" |
+              awk -v tag="$tag_ref" '
+                $2 == tag { tag_sha = $1 }
+                $2 == tag "^{}" { commit_sha = $1 }
+                END {
+                  if (!tag_sha) exit 1
+                  print (commit_sha ? commit_sha : tag_sha)
+                }
+              '
+          )
           test "$remote_sha" = "$GITHUB_SHA"
       - name: Publish through Trusted Publishing
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
