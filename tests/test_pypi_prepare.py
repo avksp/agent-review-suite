@@ -38,6 +38,15 @@ class PreparePypiTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             prepare_pypi._check_jobs(jobs, _COMMIT)
 
+    def test_requires_completed_codeql_analysis_on_release_commit(self):
+        job = {"name": "CodeQL / Python", "status": "completed", "conclusion": "success",
+               "head_sha": _COMMIT, "steps": [{"name": "Analyze Python", "conclusion": "success"}]}
+        prepare_pypi._check_codeql([job], _COMMIT)
+        for changes in ({"steps": []}, {"steps": [{"name": "Analyze Python", "conclusion": "skipped"}]},
+                        {"head_sha": "b" * 40}):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                prepare_pypi._check_codeql([job | changes], _COMMIT)
+
     def test_only_matching_release_ref_can_qualify(self):
         env = {"GITHUB_EVENT_NAME": "release", "GITHUB_REF": "refs/tags/v0.1.1"}
         with patch.dict("os.environ", env), patch.object(prepare_pypi, "_git", return_value=_COMMIT):

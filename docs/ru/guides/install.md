@@ -10,4 +10,8 @@
 
 Используйте [ограниченный CLI](../reference/validation.md) на подходящих
 системах Linux или macOS. На Windows вызовите [Python API для байтов](../reference/request-report.md).
-Для 0.1.0 используйте исходники или предоставленный wheel.
+Для версии, опубликованной в PyPI, укажите точную версию. Например:
+
+```sh
+python -m pip install agent-review-suite==0.1.0
+```

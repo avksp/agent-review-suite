@@ -46,17 +46,17 @@ def _check_ref(commit: str, version: str) -> None:
             raise ValueError("Release tag, version and source commit must match")
 
 
-def _check_run(run: dict, commit: str) -> None:
+def _check_run(run: dict, commit: str, workflow: str = "ci.yml") -> None:
     expected = {
         "head_sha": commit,
         "head_branch": "main",
         "event": "push",
-        "path": ".github/workflows/ci.yml",
+        "path": f".github/workflows/{workflow}",
         "status": "completed",
         "conclusion": "success",
     }
     if any(run.get(key) != value for key, value in expected.items()):
-        raise ValueError("The latest CI push run for the release commit must pass")
+        raise ValueError(f"The latest {workflow} push run for the release commit must pass")
 
 
 def _check_jobs(jobs: list[dict], commit: str) -> None:
@@ -65,6 +65,29 @@ def _check_jobs(jobs: list[dict], commit: str) -> None:
     if any(job["head_sha"] != commit or job["status"] != "completed" or job["conclusion"] != "success"
            for job in jobs):
         raise ValueError("Every matrix job must pass on the release commit")
+
+
+def _successful_push(prefix: str, workflow: str, commit: str) -> int:
+    runs = _api(f"{prefix}/workflows/{workflow}/runs?branch=main&event=push&head_sha={commit}&per_page=1")
+    if not runs["workflow_runs"]:
+        raise ValueError(f"Run {workflow} on main for the release commit before publishing")
+    run = runs["workflow_runs"][0]
+    _check_run(run, commit, workflow)
+    return run["id"]
+
+
+def _check_codeql(jobs: list[dict], commit: str) -> None:
+    if len(jobs) != 1:
+        raise ValueError("Expected one CodeQL job for the release commit")
+    job = jobs[0]
+    if (
+        job["name"] != "CodeQL / Python"
+        or job["status"] != "completed"
+        or job["conclusion"] != "success"
+        or job["head_sha"] != commit
+        or not any(step["name"] == "Analyze Python" and step["conclusion"] == "success" for step in job["steps"])
+    ):
+        raise ValueError("CodeQL analysis must pass on the release commit")
 
 
 def _artifact(artifacts: list[dict], run_id: int, commit: str) -> dict:
@@ -118,12 +141,9 @@ def main() -> None:
     _check_ref(commit, version)
     repository = os.environ["GITHUB_REPOSITORY"]
     prefix = f"repos/{repository}/actions"
-    runs = _api(f"{prefix}/workflows/ci.yml/runs?branch=main&event=push&head_sha={commit}&per_page=1")
-    if not runs["workflow_runs"]:
-        raise ValueError("Run CI on main for the release commit before publishing")
-    run = runs["workflow_runs"][0]
-    _check_run(run, commit)
-    run_id = run["id"]
+    codeql_id = _successful_push(prefix, "codeql.yml", commit)
+    _check_codeql(_api(f"{prefix}/runs/{codeql_id}/jobs?filter=latest&per_page=100")["jobs"], commit)
+    run_id = _successful_push(prefix, "ci.yml", commit)
     _check_jobs(_api(f"{prefix}/runs/{run_id}/jobs?filter=latest&per_page=100")["jobs"], commit)
     artifact = _artifact(_api(f"{prefix}/runs/{run_id}/artifacts?per_page=100")["artifacts"], run_id, commit)
 
@@ -140,6 +160,7 @@ def main() -> None:
         for name, value in outputs.items():
             stream.write(f"{name}={value}\n")
     print(f"Qualified {commit} with CI run {run_id}, artifact {artifact['id']} ({artifact['digest']})")
+    print(f"Qualified Python CodeQL run {codeql_id} on {commit}")
     print(json.dumps(outputs, sort_keys=True))
 
 

@@ -22,7 +22,8 @@ Set the PyPI Trusted Publisher to repository `avksp/agent-review-suite`,
 workflow `publish.yml`, and environment `pypi`.
 See [Trusted Publishing](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/).
 
-1. On GitHub, wait for all 15 CI jobs on the release commit in `main`.
+1. On GitHub, wait for all 15 CI jobs and the Python CodeQL analysis on the
+   exact release commit in `main`.
 2. Run **Publish to PyPI** manually on `main` to check the candidate. The run
    saves the wheel and source archive from that CI run. Check the file names
    and hashes. Use `python -m twine check --strict` for a metadata check.
@@ -30,7 +31,7 @@ See [Trusted Publishing](https://docs.pypi.org/trusted-publishers/creating-a-pro
    with a protected tag that matches the package version and points to the checked
    commit. For example, use `v0.1.0` for version `0.1.0`.
 4. Publishing the GitHub Release starts the upload. The workflow checks the
-   tag, commit, CI result, and SHA-256. It uploads the same wheel and source
+   tag, commit, CI and CodeQL results, and SHA-256. It uploads the same wheel and source
    archive through the `pypi` environment. Distribute the plugin ZIP separately.
 5. Verify the files on PyPI and install the published version in a clean
    environment. Record the result.
