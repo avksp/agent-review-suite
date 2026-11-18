@@ -22,7 +22,7 @@ from agent_review_suite.validation import validate_inputs
 
 SOURCE = Path(__file__).resolve().parents[1]
 FIXTURES = SOURCE / "tests/fixtures"
-MALFORMED = b"ARS validation failed: malformed, refused, or unsupported input.\n"
+MALFORMED = f"ARS validation failed: malformed, refused, or unsupported input.{os.linesep}".encode("ascii")
 
 
 def cli_args(root, name="request.json", *, kind="request", expectations="expected.json"):
