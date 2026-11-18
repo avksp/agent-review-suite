@@ -1,0 +1,94 @@
+name: Publish to PyPI
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions: {}
+concurrency:
+  group: pypi-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Verify release inputs
+    if: >-
+      github.repository == 'avksp/agent-review-suite' &&
+      ((github.event_name == 'release' && !github.event.release.prerelease) ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+      version: ${{ steps.stage.outputs.version }}
+      wheel_sha256: ${{ steps.stage.outputs.wheel_sha256 }}
+      sdist_sha256: ${{ steps.stage.outputs.sdist_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Stage exact CI distributions
+        id: stage
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B tools/release/prepare_pypi.py
+      - id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pypi-files-${{ github.run_attempt }}
+          path: pypi-files/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Upload verified packages
+    if: github.event_name == 'release'
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment: pypi
+    permissions:
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact_id }}
+          path: pypi-files
+          digest-mismatch: error
+      - name: Recheck the files before upload
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          WHEEL_SHA256: ${{ needs.prepare.outputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ needs.prepare.outputs.sdist_sha256 }}
+        shell: python
+        run: |
+          import hashlib
+          import os
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          names = {
+              f"agent_review_suite-{version}-py3-none-any.whl": os.environ["WHEEL_SHA256"],
+              f"agent_review_suite-{version}.tar.gz": os.environ["SDIST_SHA256"],
+          }
+          root = Path("pypi-files")
+          if {entry.name for entry in root.iterdir()} != set(names):
+              raise SystemExit("Unexpected PyPI file inventory")
+          for name, expected in names.items():
+              path = root / name
+              if path.is_symlink() or not path.is_file():
+                  raise SystemExit(f"Expected a regular file: {name}")
+              with path.open("rb") as stream:
+                  observed = hashlib.file_digest(stream, "sha256").hexdigest()
+              if observed != expected:
+                  raise SystemExit(f"PyPI file digest differs: {name}")
+      - name: Publish through Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: pypi-files/

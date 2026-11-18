@@ -16,18 +16,23 @@
 For example, compare the SHA-256 of the expectations schema in the wheel,
 sdist and plugin ZIP. The three digests MUST match.
 
-## Prepare PyPI
+## Publish to PyPI
 
-Check the wheel and sdist metadata with `python -m twine check --strict`.
-Record the names and hashes of both files. Only the wheel and sdist belong
-in the PyPI upload set. Keep the plugin ZIP separate.
+Set the PyPI Trusted Publisher to repository `avksp/agent-review-suite`,
+workflow `publish.yml`, and environment `pypi`.
+See [Trusted Publishing](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/).
 
-For a new project, the owner can set up a pending Trusted Publisher for
-the exact GitHub repository, workflow file and environment. A pending
-publisher takes effect on first use. Confirm control of the project name
-before publishing. [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+1. On GitHub, wait for all 15 CI jobs on the release commit in `main`.
+2. Run **Publish to PyPI** manually on `main` to check the candidate. The run
+   saves the wheel and source archive from that CI run. Check the file names
+   and hashes. Use `python -m twine check --strict` for a metadata check.
+3. The release owner MUST authorize publication. Create a stable GitHub Release
+   with a protected tag that matches the package version and points to the checked
+   commit. For example, use `v0.1.0` for version `0.1.0`.
+4. Publishing the GitHub Release starts the upload. The workflow checks the
+   tag, commit, CI result, and SHA-256. It uploads the same wheel and source
+   archive through the `pypi` environment. Distribute the plugin ZIP separately.
+5. Verify the files on PyPI and install the published version in a clean
+   environment. Record the result.
 
-The release owner MUST authorize publication before publisher activation or
-upload. Review the workflow and verify the exact upload files and their hashes. After an authorized release,
-verify GitHub and PyPI artifacts and a clean installation from PyPI. Record
-the postpublication audit.
+If the CI artifacts expire, rerun all jobs for the release commit first.
