@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "ars-review-policy-draft.v1",
+  "status": "DESIGN_ONLY",
+  "profiles": {
+    "technical": {
+      "audits": [
+        "solution",
+        "architecture",
+        "security",
+        "tests",
+        "resources",
+        "documentation",
+        "integration"
+      ]
+    },
+    "product": {
+      "audits": [
+        "problem-fit",
+        "alternatives",
+        "outcome-validation"
+      ]
+    }
+  },
+  "routing": "HOST_LOCAL_UNASSIGNED",
+  "independence": "caller-required",
+  "tools": "none-unless-explicitly-authorized",
+  "wholeHostUsage": null,
+  "notes": [
+    "Not a runtime schema or configuration consumer",
+    "Assignments may select different adapter/model/effort within caller policy"
+  ]
+}

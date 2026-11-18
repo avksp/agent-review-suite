@@ -1,0 +1,6 @@
+Agent Review Suite
+Copyright 2026 Agent Review Suite contributors.
+Original repository bootstrap and project materials.
+No third-party audit engines or OWASP text are vendored.
+External methodologies are attributed in docs/reference/sources.md.
+The private .alk research copy is excluded from source distributions and Git.

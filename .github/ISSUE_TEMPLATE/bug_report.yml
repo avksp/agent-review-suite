@@ -1,0 +1,16 @@
+name: Bug report
+description: Report a reproducible, non-sensitive problem.
+body:
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction and versions
+      description: Redact credentials, private paths and model session contents.
+    validations:
+      required: true

@@ -1,0 +1,8 @@
+# Pinned maintenance tools, aligned with inspected ALK policy.
+ruff==0.17.3
+mypy==2.4.1
+coverage==7.17.2
+jsonschema==4.26.0
+build==1.6.1
+setuptools==83.0.0
+wheel==0.48.0

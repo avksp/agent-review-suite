@@ -1,0 +1,13 @@
+{
+  "name": "agent-review-suite",
+  "owner": {
+    "name": "Agent Review Suite contributors"
+  },
+  "plugins": [
+    {
+      "name": "agent-review-suite",
+      "source": "./",
+      "description": "Provider-neutral review guidance and bounded v1 request and report validation."
+    }
+  ]
+}

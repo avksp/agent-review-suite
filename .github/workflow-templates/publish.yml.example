@@ -1,0 +1,25 @@
+# INACTIVE DESIGN. Not a release authority and not executable in this location.
+# Before activation: reviewed native completion, exact-source CI qualification,
+# protected tag/environment setup, PyPI project ownership and trusted publisher.
+# The final release plan must add source/artifact qualification to this template.
+# Do not move it into workflows unchanged: this is deliberately incomplete.
+name: Publish (inactive design)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  publish:
+    environment: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      # Future authorized task supplies the EXACT QUALIFIED distribution here.
+      # No build-from-unverified-tag or user-supplied readiness boolean.
+      - name: Refuse incomplete bootstrap publisher
+        run: exit 1
+      - name: Trusted Publishing (not reachable in this example)
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
+        with:
+          packages-dir: dist/

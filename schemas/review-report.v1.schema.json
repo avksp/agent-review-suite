@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ars:review-report:v1",
+  "title": "ARS ReviewReport v1",
+  "$comment": "This schema describes fields. ARS also checks wire limits, semantic rules and trusted bindings.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "ars.review-report.v1"
+    },
+    "requestId": {
+      "$ref": "#/$defs/id"
+    },
+    "assignmentId": {
+      "$ref": "#/$defs/id"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "packs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pack"
+      }
+    },
+    "requestSha256": {
+      "$ref": "#/$defs/digest"
+    },
+    "executionStatus": {
+      "enum": [
+        "COMPLETE",
+        "INCOMPLETE",
+        "FAILED"
+      ]
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "status": {
+            "enum": [
+              "CHECKED",
+              "NOT_CHECKED"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status"
+        ]
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "severity": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "certainty": {
+            "enum": [
+              "STATIC",
+              "OBSERVED",
+              "UNCONFIRMED"
+            ]
+          },
+          "summary": {
+            "$ref": "#/$defs/text"
+          },
+          "minimumFix": {
+            "$ref": "#/$defs/text"
+          },
+          "verification": {
+            "$ref": "#/$defs/text"
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            },
+            "uniqueItems": true,
+            "maxItems": 2000
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "severity",
+          "certainty",
+          "summary",
+          "minimumFix",
+          "verification",
+          "evidenceIds"
+        ]
+      },
+      "maxItems": 1000
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "sha256": {
+            "$ref": "#/$defs/digest"
+          },
+          "description": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "sha256",
+          "description"
+        ]
+      },
+      "maxItems": 2000
+    },
+    "usage": {
+      "type": "object",
+      "properties": {
+        "inputTokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "outputTokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "invocations": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "elapsedMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "inputTokens",
+        "outputTokens",
+        "invocations",
+        "elapsedMs"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/text"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "assignmentId",
+    "source",
+    "packs",
+    "requestSha256",
+    "executionStatus",
+    "coverage",
+    "findings",
+    "evidence",
+    "usage",
+    "limitations"
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "not": {
+        "pattern": "[^A-Za-z0-9._-]"
+      }
+    },
+    "digest": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "not": {
+        "pattern": "[^0-9a-f]"
+      }
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "baseId": {
+          "$ref": "#/$defs/id"
+        },
+        "representation": {
+          "enum": [
+            "git-diff-bytes-v1",
+            "source-bundle-bytes-v1"
+          ]
+        },
+        "sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "baseSha256": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "baseId",
+        "representation",
+        "sha256",
+        "baseSha256"
+      ]
+    },
+    "pack": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "$ref": "#/$defs/text"
+        },
+        "sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "sha256"
+      ]
+    }
+  }
+}
