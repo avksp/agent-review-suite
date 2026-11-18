@@ -1,0 +1,19 @@
+{
+  "name": "agent-review-suite",
+  "version": "0.1.0",
+  "description": "Provider-neutral review guidance and bounded v1 request and report validation.",
+  "author": {
+    "name": "Agent Review Suite contributors"
+  },
+  "homepage": "https://github.com/avksp/agent-review-suite",
+  "repository": "https://github.com/avksp/agent-review-suite",
+  "license": "Apache-2.0",
+  "keywords": [
+    "agent-review",
+    "architecture",
+    "security",
+    "product-review",
+    "evidence"
+  ],
+  "skills": "./skills"
+}

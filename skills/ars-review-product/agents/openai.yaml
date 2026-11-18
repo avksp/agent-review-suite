@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARS review product "
+  short_description: "Bounded independent review with explicit evidence"
+  default_prompt: "Use $ars-review-product to review the supplied bounded material."

@@ -1,0 +1,59 @@
+name: CI
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    name: Python ${{ matrix.python }} / ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-26-intel, windows-latest]
+        python: ['3.11', '3.12', '3.13', '3.14', '3.15']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python tools/check_repository.py --public-ci
+      - run: python -m ruff check .
+      - run: python -m mypy
+      - name: Source import and test suite
+        env:
+          PYTHONPATH: src
+        shell: python
+        run: |
+          import pathlib, subprocess, sys
+          import agent_review_suite
+          origin = pathlib.Path(agent_review_suite.__file__).resolve()
+          assert origin.is_relative_to(pathlib.Path('src').resolve()), origin
+          print(f'Source import: {origin}')
+          subprocess.run([sys.executable, '-B', '-m', 'unittest', 'discover', '-s', 'tests', '-v'], check=True)
+      - run: python -m build --no-isolation
+      - run: python tools/release/build_plugin.py --output dist/agent-review-suite-plugin.zip
+      - name: Distribution boundary and clean installation
+        shell: python
+        run: |
+          import subprocess, sys
+          from pathlib import Path
+          artifacts = sorted(p for p in Path('dist').iterdir() if p.name.endswith(('.whl', '.tar.gz', '.zip')))
+          subprocess.run([sys.executable, 'tools/release/check_dist.py', '--public-ci', *map(str, artifacts)], check=True)
+          wheel, = Path('dist').glob('*.whl')
+          subprocess.run([sys.executable, 'tools/release/smoke_install.py', str(wheel)], check=True)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ars-${{ matrix.os }}-${{ matrix.python }}-${{ github.sha }}
+          path: dist/*
+          retention-days: 7

@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ars:review-expectations:v1",
+  "title": "ARS ReviewExpectations v1",
+  "$comment": "This schema checks fields. Protect expectations separately. ARS also checks wire limits, unique pack IDs and trusted bindings.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "ars.review-expectations.v1"
+    },
+    "requestId": {
+      "$ref": "#/$defs/id"
+    },
+    "assignmentId": {
+      "$ref": "#/$defs/id"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "packs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pack"
+      }
+    },
+    "requestSha256": {
+      "$ref": "#/$defs/digest"
+    },
+    "requiredCoverage": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "assignmentId",
+    "source",
+    "packs",
+    "requestSha256",
+    "requiredCoverage"
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "not": {
+        "pattern": "[^A-Za-z0-9._-]"
+      }
+    },
+    "digest": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "not": {
+        "pattern": "[^0-9a-f]"
+      }
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "baseId": {
+          "$ref": "#/$defs/id"
+        },
+        "representation": {
+          "enum": [
+            "git-diff-bytes-v1",
+            "source-bundle-bytes-v1"
+          ]
+        },
+        "sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "baseSha256": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "baseId",
+        "representation",
+        "sha256",
+        "baseSha256"
+      ]
+    },
+    "pack": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "$ref": "#/$defs/text"
+        },
+        "sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "sha256"
+      ]
+    }
+  }
+}
