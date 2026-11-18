@@ -123,10 +123,22 @@ class PublicBoundaryTests(unittest.TestCase):
         self.assertFalse(checker.unsafe("agent_review_suite-0.1.0/tools/release/check_dist.py"))
         with tempfile.TemporaryDirectory() as directory:
             plugin = Path(directory) / "plugin.zip"
-            synthetic_archive(checker, plugin, extras=invalid)
+            slash_names = tuple(name for name in invalid if "\\" not in name)
+            synthetic_archive(checker, plugin, extras=slash_names)
             errors = checker.inspect(plugin)["errors"]
-            for name in invalid:
+            for name in slash_names:
                 self.assertIn(name, errors)
+
+            # Write the raw member name despite ZipInfo's platform separator conversion.
+            raw_name = "assets\\alias.txt"
+            node = zipfile.ZipInfo("assets/alias.txt")
+            node.filename = raw_name
+            with zipfile.ZipFile(plugin, "a") as archive:
+                archive.writestr(node, b"x")
+            with zipfile.ZipFile(plugin) as archive:
+                member = archive.infolist()[-1]
+                self.assertEqual(member.orig_filename, raw_name)
+            self.assertIn(member.filename, checker.inspect(plugin)["errors"])
             synthetic_archive(checker, plugin, extras=("README.RU.md",))
             self.assertIn("duplicate or aliased members", checker.inspect(plugin)["errors"])
             synthetic_archive(checker, plugin)
