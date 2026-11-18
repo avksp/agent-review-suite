@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARS review implementation "
+  short_description: "Bounded independent review with explicit evidence"
+  default_prompt: "Use $ars-review-implementation to review the supplied bounded material."

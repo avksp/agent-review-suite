@@ -1,0 +1,17 @@
+{
+  "name": "agent-review-suite",
+  "plugins": [
+    {
+      "name": "agent-review-suite",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

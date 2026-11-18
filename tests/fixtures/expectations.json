@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "ars.review-expectations.v1",
+  "requestId": "request-example",
+  "assignmentId": "assignment-example",
+  "source": {
+    "id": "source-example",
+    "baseId": "base-example",
+    "representation": "git-diff-bytes-v1",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "baseSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "packs": [],
+  "requestSha256": "54a897025b1fc4031b17f70ef28e9d45b1e925d871687d3380942f8185994dab",
+  "requiredCoverage": [
+    "inspect-scope"
+  ]
+}

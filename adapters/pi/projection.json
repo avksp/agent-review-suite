@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "ars-host-projection-draft.v1",
+  "hostId": "pi",
+  "role": "guidance-only",
+  "status": "UNQUALIFIED",
+  "testedVersion": null,
+  "modelBinding": null,
+  "effortSupport": null,
+  "installationObserved": false,
+  "enforcementClaimed": false,
+  "delivery": "operator-supplied packet or existing documented SKILL.md support",
+  "qualificationEvidence": [],
+  "limits": [
+    "No native task execution claim",
+    "No host source/global configuration edits"
+  ]
+}
