@@ -38,8 +38,17 @@ class PreparePypiTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             prepare_pypi._check_jobs(jobs, _COMMIT)
 
+    def test_requires_completed_codeql_analysis_on_release_commit(self):
+        job = {"name": "CodeQL / Python", "status": "completed", "conclusion": "success",
+               "head_sha": _COMMIT, "steps": [{"name": "Analyze Python", "conclusion": "success"}]}
+        prepare_pypi._check_codeql([job], _COMMIT)
+        for changes in ({"steps": []}, {"steps": [{"name": "Analyze Python", "conclusion": "skipped"}]},
+                        {"head_sha": "b" * 40}):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                prepare_pypi._check_codeql([job | changes], _COMMIT)
+
     def test_only_matching_release_ref_can_qualify(self):
-        env = {"GITHUB_EVENT_NAME": "release", "GITHUB_REF": "refs/tags/v0.1.1"}
+        env = {"GITHUB_EVENT_NAME": "release", "GITHUB_REF": "refs/tags/v0.1.1", "GITHUB_REF_PROTECTED": "true"}
         with patch.dict("os.environ", env), patch.object(prepare_pypi, "_git", return_value=_COMMIT):
             with self.assertRaisesRegex(ValueError, "Release tag"):
                 prepare_pypi._check_ref(_COMMIT, _VERSION)
@@ -65,3 +74,20 @@ class PreparePypiTests(unittest.TestCase):
             self.assertEqual((output / _WHEEL).read_bytes(), b"synthetic wheel")
             self.assertEqual((output / _SDIST).read_bytes(), b"synthetic sdist")
             self.assertEqual(outputs["wheel_sha256"], hashlib.sha256(b"synthetic wheel").hexdigest())
+
+    def test_requires_release_attachments_to_match_ci(self):
+        outputs = {"version": _VERSION, "wheel_sha256": "1" * 64,
+                   "sdist_sha256": "2" * 64, "plugin_sha256": "3" * 64}
+        assets = [{"name": name, "digest": f"sha256:{outputs[f'{kind}_sha256']}"}
+                  for name, kind in ((_WHEEL, "wheel"), (_SDIST, "sdist"),
+                                     ("agent-review-suite-plugin.zip", "plugin"))]
+        release = {
+            "tag_name": f"v{_VERSION}", "draft": False, "prerelease": False,
+            "immutable": True, "assets": assets,
+        }
+        prepare_pypi._check_release_assets(release, outputs)
+        with self.assertRaisesRegex(ValueError, "must be immutable"):
+            prepare_pypi._check_release_assets(release | {"immutable": False}, outputs)
+        for candidate in (assets[:-1], [{**assets[0], "digest": "sha256:" + "0" * 64}, *assets[1:]]):
+            with self.subTest(candidate=candidate), self.assertRaises(ValueError):
+                prepare_pypi._check_release_assets(release | {"assets": candidate}, outputs)

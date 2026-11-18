@@ -32,6 +32,8 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Verify repository and version metadata
+        run: python3 -B tools/check_repository.py --public-ci
       - name: Stage exact CI distributions
         id: stage
         env:
@@ -88,6 +90,26 @@ jobs:
                   observed = hashlib.file_digest(stream, "sha256").hexdigest()
               if observed != expected:
                   raise SystemExit(f"PyPI file digest differs: {name}")
+      - name: Recheck the release tag
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        shell: bash
+        run: |
+          tag_ref="refs/tags/v$VERSION"
+          test "$GITHUB_REF" = "$tag_ref"
+          test "$GITHUB_REF_PROTECTED" = "true"
+          remote_sha=$(
+            git ls-remote --exit-code "https://github.com/$GITHUB_REPOSITORY.git" "$tag_ref" "$tag_ref^{}" |
+              awk -v tag="$tag_ref" '
+                $2 == tag { tag_sha = $1 }
+                $2 == tag "^{}" { commit_sha = $1 }
+                END {
+                  if (!tag_sha) exit 1
+                  print (commit_sha ? commit_sha : tag_sha)
+                }
+              '
+          )
+          test "$remote_sha" = "$GITHUB_SHA"
       - name: Publish through Trusted Publishing
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:

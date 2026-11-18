@@ -9,4 +9,8 @@ Import `agent_review_suite` and inspect `__version__` to check the installation.
 
 Use the [bounded CLI](../reference/validation.md) on eligible Linux or macOS.
 On Windows, call the [Python bytes API](../reference/request-report.md).
-Use the checkout or the supplied wheel for 0.1.0.
+For a version published on PyPI, install the exact version. For example:
+
+```sh
+python -m pip install agent-review-suite==0.1.0
+```

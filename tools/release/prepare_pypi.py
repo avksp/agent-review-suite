@@ -12,6 +12,7 @@ import zipfile
 from pathlib import Path
 
 _PROJECT = "agent_review_suite"
+_PLUGIN = "agent-review-suite-plugin.zip"
 _MAX_BYTES = 16 * 1024 * 1024
 _MATRIX = {
     f"Python {version} / {runner}": (runner, version)
@@ -42,21 +43,23 @@ def _check_ref(commit: str, version: str) -> None:
     _git("merge-base", "--is-ancestor", commit, "refs/remotes/origin/main")
     if os.environ["GITHUB_EVENT_NAME"] == "release":
         tag = f"refs/tags/v{version}"
+        if os.environ.get("GITHUB_REF_PROTECTED") != "true":
+            raise ValueError("The release tag must be protected")
         if os.environ["GITHUB_REF"] != tag or _git("rev-parse", "--verify", f"{tag}^{{commit}}") != commit:
             raise ValueError("Release tag, version and source commit must match")
 
 
-def _check_run(run: dict, commit: str) -> None:
+def _check_run(run: dict, commit: str, workflow: str = "ci.yml") -> None:
     expected = {
         "head_sha": commit,
         "head_branch": "main",
         "event": "push",
-        "path": ".github/workflows/ci.yml",
+        "path": f".github/workflows/{workflow}",
         "status": "completed",
         "conclusion": "success",
     }
     if any(run.get(key) != value for key, value in expected.items()):
-        raise ValueError("The latest CI push run for the release commit must pass")
+        raise ValueError(f"The latest {workflow} push run for the release commit must pass")
 
 
 def _check_jobs(jobs: list[dict], commit: str) -> None:
@@ -65,6 +68,29 @@ def _check_jobs(jobs: list[dict], commit: str) -> None:
     if any(job["head_sha"] != commit or job["status"] != "completed" or job["conclusion"] != "success"
            for job in jobs):
         raise ValueError("Every matrix job must pass on the release commit")
+
+
+def _successful_push(prefix: str, workflow: str, commit: str) -> int:
+    runs = _api(f"{prefix}/workflows/{workflow}/runs?branch=main&event=push&head_sha={commit}&per_page=1")
+    if not runs["workflow_runs"]:
+        raise ValueError(f"Run {workflow} on main for the release commit before publishing")
+    run = runs["workflow_runs"][0]
+    _check_run(run, commit, workflow)
+    return run["id"]
+
+
+def _check_codeql(jobs: list[dict], commit: str) -> None:
+    if len(jobs) != 1:
+        raise ValueError("Expected one CodeQL job for the release commit")
+    job = jobs[0]
+    if (
+        job["name"] != "CodeQL / Python"
+        or job["status"] != "completed"
+        or job["conclusion"] != "success"
+        or job["head_sha"] != commit
+        or not any(step["name"] == "Analyze Python" and step["conclusion"] == "success" for step in job["steps"])
+    ):
+        raise ValueError("CodeQL analysis must pass on the release commit")
 
 
 def _artifact(artifacts: list[dict], run_id: int, commit: str) -> dict:
@@ -96,20 +122,39 @@ def _stage(archive: Path, artifact: dict, version: str, output: Path) -> dict[st
         if sorted(distributions) != sorted([wheel, sdist]):
             raise ValueError("CI must provide exactly the wheel and sdist for the release version")
         payloads = {}
-        for name in (wheel, sdist):
+        if members.count(_PLUGIN) != 1:
+            raise ValueError("CI must provide one plugin ZIP")
+        for name in (wheel, sdist, _PLUGIN):
             entry = package.getinfo(name)
             if not 0 < entry.file_size <= _MAX_BYTES:
                 raise ValueError("CI distribution exceeds the size limit")
             payloads[name] = package.read(entry)
 
     output.mkdir()
-    for name, data in payloads.items():
-        (output / name).write_bytes(data)
+    for name in (wheel, sdist):
+        (output / name).write_bytes(payloads[name])
     return {
         "version": version,
         "wheel_sha256": hashlib.sha256(payloads[wheel]).hexdigest(),
         "sdist_sha256": hashlib.sha256(payloads[sdist]).hexdigest(),
+        "plugin_sha256": hashlib.sha256(payloads[_PLUGIN]).hexdigest(),
     }
+
+
+def _check_release_assets(release: dict, outputs: dict[str, str]) -> None:
+    version = outputs["version"]
+    if release["tag_name"] != f"v{version}" or release["draft"] or release["prerelease"]:
+        raise ValueError("Expected a published stable release for the package version")
+    if release.get("immutable") is not True:
+        raise ValueError("GitHub Release must be immutable")
+    approved = {asset["name"]: asset["digest"] for asset in release["assets"]}
+    expected = {
+        f"{_PROJECT}-{version}-py3-none-any.whl": outputs["wheel_sha256"],
+        f"{_PROJECT}-{version}.tar.gz": outputs["sdist_sha256"],
+        _PLUGIN: outputs["plugin_sha256"],
+    }
+    if approved != {name: f"sha256:{digest}" for name, digest in expected.items()}:
+        raise ValueError("GitHub Release assets must match the qualified CI files")
 
 
 def main() -> None:
@@ -118,12 +163,9 @@ def main() -> None:
     _check_ref(commit, version)
     repository = os.environ["GITHUB_REPOSITORY"]
     prefix = f"repos/{repository}/actions"
-    runs = _api(f"{prefix}/workflows/ci.yml/runs?branch=main&event=push&head_sha={commit}&per_page=1")
-    if not runs["workflow_runs"]:
-        raise ValueError("Run CI on main for the release commit before publishing")
-    run = runs["workflow_runs"][0]
-    _check_run(run, commit)
-    run_id = run["id"]
+    codeql_id = _successful_push(prefix, "codeql.yml", commit)
+    _check_codeql(_api(f"{prefix}/runs/{codeql_id}/jobs?filter=latest&per_page=100")["jobs"], commit)
+    run_id = _successful_push(prefix, "ci.yml", commit)
     _check_jobs(_api(f"{prefix}/runs/{run_id}/jobs?filter=latest&per_page=100")["jobs"], commit)
     artifact = _artifact(_api(f"{prefix}/runs/{run_id}/artifacts?per_page=100")["artifacts"], run_id, commit)
 
@@ -136,10 +178,15 @@ def main() -> None:
             )
         outputs = _stage(archive, artifact, version, Path("pypi-files"))
 
+    if os.environ["GITHUB_EVENT_NAME"] == "release":
+        release = _api(f"repos/{repository}/releases/tags/v{version}")
+        _check_release_assets(release, outputs)
+
     with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as stream:
         for name, value in outputs.items():
             stream.write(f"{name}={value}\n")
     print(f"Qualified {commit} with CI run {run_id}, artifact {artifact['id']} ({artifact['digest']})")
+    print(f"Qualified Python CodeQL run {codeql_id} on {commit}")
     print(json.dumps(outputs, sort_keys=True))
 
 
