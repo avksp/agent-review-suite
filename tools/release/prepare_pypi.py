@@ -145,13 +145,15 @@ def _check_release_assets(release: dict, outputs: dict[str, str]) -> None:
     version = outputs["version"]
     if release["tag_name"] != f"v{version}" or release["draft"] or release["prerelease"]:
         raise ValueError("Expected a published stable release for the package version")
+    if release.get("immutable") is not True:
+        raise ValueError("GitHub Release must be immutable")
     approved = {asset["name"]: asset["digest"] for asset in release["assets"]}
     expected = {
         f"{_PROJECT}-{version}-py3-none-any.whl": outputs["wheel_sha256"],
         f"{_PROJECT}-{version}.tar.gz": outputs["sdist_sha256"],
         _PLUGIN: outputs["plugin_sha256"],
     }
-    if any(approved.get(name) != f"sha256:{digest}" for name, digest in expected.items()):
+    if approved != {name: f"sha256:{digest}" for name, digest in expected.items()}:
         raise ValueError("GitHub Release assets must match the qualified CI files")
 
 

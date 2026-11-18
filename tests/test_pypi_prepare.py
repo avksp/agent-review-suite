@@ -81,8 +81,13 @@ class PreparePypiTests(unittest.TestCase):
         assets = [{"name": name, "digest": f"sha256:{outputs[f'{kind}_sha256']}"}
                   for name, kind in ((_WHEEL, "wheel"), (_SDIST, "sdist"),
                                      ("agent-review-suite-plugin.zip", "plugin"))]
-        release = {"tag_name": f"v{_VERSION}", "draft": False, "prerelease": False, "assets": assets}
+        release = {
+            "tag_name": f"v{_VERSION}", "draft": False, "prerelease": False,
+            "immutable": True, "assets": assets,
+        }
         prepare_pypi._check_release_assets(release, outputs)
+        with self.assertRaisesRegex(ValueError, "must be immutable"):
+            prepare_pypi._check_release_assets(release | {"immutable": False}, outputs)
         for candidate in (assets[:-1], [{**assets[0], "digest": "sha256:" + "0" * 64}, *assets[1:]]):
             with self.subTest(candidate=candidate), self.assertRaises(ValueError):
                 prepare_pypi._check_release_assets(release | {"assets": candidate}, outputs)

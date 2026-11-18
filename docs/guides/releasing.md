@@ -29,10 +29,12 @@ See [Trusted Publishing](https://docs.pypi.org/trusted-publishers/creating-a-pro
    and hashes. Use `python -m twine check --strict` for a metadata check.
 3. The release owner MUST authorize publication. Create a stable GitHub Release
    with a protected tag that matches the package version and points to the checked
-   commit. Attach the exact CI wheel, source archive and plugin ZIP to the draft.
+   commit. Enable immutable releases on the repository. Attach the exact CI
+   wheel, source archive and plugin ZIP to the draft before you publish it.
    For example, use `v0.1.0` for version `0.1.0`.
-4. Publishing the GitHub Release starts the upload. The workflow checks the
-   tag, commit, CI and CodeQL results, and SHA-256 of the attached files. It uploads the same wheel and source
+4. Publishing the GitHub Release starts the upload. The published release MUST
+   be immutable. The workflow checks the tag, commit, CI and CodeQL results,
+   and SHA-256 of the attached files. It uploads the same wheel and source
    archive through the `pypi` environment. Distribute the plugin ZIP separately.
 5. Verify the files on PyPI and install the published version in a clean
    environment. Record the result.
