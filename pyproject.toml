@@ -1,0 +1,89 @@
+[build-system]
+requires = ["setuptools==83.0.0", "wheel==0.48.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-review-suite"
+dynamic = ["version"]
+description = "Provider-neutral review guidance and bounded v1 request and report validation"
+readme = "README.md"
+requires-python = ">=3.11,<3.16"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{name = "Agent Review Suite contributors"}]
+keywords = ["agents", "review", "architecture", "security", "product-review", "evidence"]
+classifiers = ["Development Status :: 3 - Alpha", "Intended Audience :: Developers", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13", "Programming Language :: Python :: 3.14", "Programming Language :: Python :: 3.15", "Operating System :: OS Independent", "Typing :: Typed"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/avksp/agent-review-suite"
+Repository = "https://github.com/avksp/agent-review-suite"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.dynamic]
+version = {attr = "agent_review_suite._version.__version__"}
+
+[tool.setuptools.package-data]
+agent_review_suite = ["py.typed"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = [".alk", "tasks", "work", "release", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/agent_review_suite"]
+strict = true
+
+[tool.setuptools.data-files]
+"share/agent-review-suite/schemas" = ["schemas/review-request.v1.schema.json", "schemas/review-report.v1.schema.json", "schemas/review-expectations.v1.schema.json"]
+"share/agent-review-suite/." = ["LICENSE", "NOTICE", "README.md", "INSTALL_FOR_AGENTS.md", "plugin.json"]
+"share/agent-review-suite/.agents/plugins" = [".agents/plugins/marketplace.json"]
+"share/agent-review-suite/.claude-plugin" = [".claude-plugin/marketplace.json", ".claude-plugin/plugin.json"]
+"share/agent-review-suite/.codex-plugin" = [".codex-plugin/plugin.json"]
+"share/agent-review-suite/adapters" = ["adapters/README.md", "adapters/README.ru.md"]
+"share/agent-review-suite/adapters/claude" = ["adapters/claude/projection.json"]
+"share/agent-review-suite/adapters/codex" = ["adapters/codex/projection.json"]
+"share/agent-review-suite/adapters/cursor" = ["adapters/cursor/projection.json"]
+"share/agent-review-suite/adapters/gemini-cli" = ["adapters/gemini-cli/projection.json"]
+"share/agent-review-suite/adapters/goose" = ["adapters/goose/projection.json"]
+"share/agent-review-suite/adapters/grok-build" = ["adapters/grok-build/projection.json"]
+"share/agent-review-suite/adapters/hermes" = ["adapters/hermes/projection.json"]
+"share/agent-review-suite/adapters/kimi-code" = ["adapters/kimi-code/projection.json"]
+"share/agent-review-suite/adapters/opencode" = ["adapters/opencode/projection.json"]
+"share/agent-review-suite/adapters/openinterpreter" = ["adapters/openinterpreter/projection.json"]
+"share/agent-review-suite/adapters/pi" = ["adapters/pi/projection.json"]
+"share/agent-review-suite/adapters/qwen-code" = ["adapters/qwen-code/projection.json"]
+"share/agent-review-suite/docs" = ["docs/README.md", "docs/roadmap.md"]
+"share/agent-review-suite/docs/architecture" = ["docs/architecture/adr-0001-boundaries.md", "docs/architecture/c0-c4.md", "docs/architecture/threat-model.md"]
+"share/agent-review-suite/docs/assets" = ["docs/assets/agent-review-suite-banner.svg"]
+"share/agent-review-suite/docs/guides" = ["docs/guides/install.md", "docs/guides/releasing.md", "docs/guides/skills.md", "docs/guides/testing.md"]
+"share/agent-review-suite/docs/reference" = ["docs/reference/adapters.md", "docs/reference/integration.md", "docs/reference/request-report.md", "docs/reference/validation.md", "docs/reference/sources.md"]
+"share/agent-review-suite/docs/ru" = ["docs/ru/README.md", "docs/ru/roadmap.md"]
+"share/agent-review-suite/docs/ru/architecture" = ["docs/ru/architecture/adr-0001-boundaries.md", "docs/ru/architecture/c0-c4.md", "docs/ru/architecture/threat-model.md"]
+"share/agent-review-suite/docs/ru/guides" = ["docs/ru/guides/install.md", "docs/ru/guides/releasing.md", "docs/ru/guides/skills.md", "docs/ru/guides/testing.md"]
+"share/agent-review-suite/docs/ru/reference" = ["docs/ru/reference/adapters.md", "docs/ru/reference/integration.md", "docs/ru/reference/request-report.md", "docs/ru/reference/validation.md", "docs/ru/reference/sources.md"]
+"share/agent-review-suite/docs/tutorials" = ["docs/tutorials/first-validation.md"]
+"share/agent-review-suite/docs/ru/tutorials" = ["docs/ru/tutorials/first-validation.md"]
+"share/agent-review-suite/profiles" = ["profiles/review-policy.example.json"]
+"share/agent-review-suite/skills/ars-review-implementation" = ["skills/ars-review-implementation/SKILL.md"]
+"share/agent-review-suite/skills/ars-review-implementation/agents" = ["skills/ars-review-implementation/agents/openai.yaml"]
+"share/agent-review-suite/skills/ars-review-implementation/references" = ["skills/ars-review-implementation/references/boundary.md"]
+"share/agent-review-suite/skills/ars-review-product" = ["skills/ars-review-product/SKILL.md"]
+"share/agent-review-suite/skills/ars-review-product/agents" = ["skills/ars-review-product/agents/openai.yaml"]
+"share/agent-review-suite/skills/ars-review-product/references" = ["skills/ars-review-product/references/boundary.md"]
+"share/agent-review-suite/skills/ars-review-security" = ["skills/ars-review-security/SKILL.md"]
+"share/agent-review-suite/skills/ars-review-security/agents" = ["skills/ars-review-security/agents/openai.yaml"]
+"share/agent-review-suite/skills/ars-review-security/references" = ["skills/ars-review-security/references/boundary.md"]
+"share/agent-review-suite/skills/ars-review-solution" = ["skills/ars-review-solution/SKILL.md"]
+"share/agent-review-suite/skills/ars-review-solution/agents" = ["skills/ars-review-solution/agents/openai.yaml"]
+"share/agent-review-suite/skills/ars-review-solution/references" = ["skills/ars-review-solution/references/boundary.md"]

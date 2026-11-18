@@ -1,0 +1,18 @@
+include LICENSE NOTICE README.md INSTALL_FOR_AGENTS.md plugin.json
+recursive-include docs *.md *.svg
+recursive-include skills *.md *.yaml
+recursive-include adapters *.md *.json
+recursive-include profiles *.json
+include schemas/review-request.v1.schema.json schemas/review-report.v1.schema.json schemas/review-expectations.v1.schema.json
+recursive-include tools *.py
+recursive-include tests *.py
+include tests/fixtures/request.json tests/fixtures/report.json tests/fixtures/expectations.json
+recursive-include .codex-plugin *.json
+recursive-include .claude-plugin *.json
+recursive-include .agents/plugins *.json
+prune .alk
+prune tasks
+prune work
+prune release
+prune .venv
+global-exclude __pycache__ *.py[cod] .DS_Store .env .env.*
