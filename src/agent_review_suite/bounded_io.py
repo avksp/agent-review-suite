@@ -76,6 +76,8 @@ def _components(name: str, forbidden: str = "\\:\0") -> list[str]:
 
 
 def _directory_flags() -> int:
+    if sys.platform == "win32":
+        raise ValidationError()
     return os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK
 
 
@@ -146,6 +148,8 @@ class LocalFiles:
 
     def read(self, path: str) -> ReadInput:
         """Refuse nonregular, linked, oversized, or observably changed inputs."""
+        if sys.platform == "win32":
+            raise ValidationError()
         parts = _components(path)
         with ExitStack() as stack:
             parent, chain = _walk_directories(stack, self._descriptor, parts[:-1], self._deadline)
@@ -188,6 +192,8 @@ def open_local_files(root: str, deadline: float) -> Iterator[LocalFiles]:
 
 
 def _read_pipe(descriptor: int, deadline: float) -> bytes:
+    if sys.platform == "win32":
+        raise ValidationError()
     data = bytearray()
     was_blocking = os.get_blocking(descriptor)
     if was_blocking:
